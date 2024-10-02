@@ -1,64 +1,68 @@
-'use client'; // This is required for client-side components
+// Filename: app/components/Chat.tsx
+'use client'; // Add this directive
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import BranchMessage from './BranchMessage';
 
 const Chat = () => {
   const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState<string>('');
+  const [selectedMessage, setSelectedMessage] = useState<any | null>(null);
+  const [newMessage, setNewMessage] = useState('');
 
   const fetchMessages = async () => {
-    const { data, error } = await supabase.from('messages').select('*');
-    if (error) {
-      console.error('Error fetching messages:', error);
-      return;
-    }
+    const { data } = await supabase.from('messages').select('*').order('created_at');
     setMessages(data || []);
-  };
-
-  const handleSendMessage = async () => {
-    if (input.trim() === '') return;
-
-    const { data, error } = await supabase
-      .from('messages')
-      .insert([{ content: input }])
-      .select('*');
-
-    if (error) {
-      console.error('Error sending message:', error);
-      return;
-    }
-
-    setMessages((prevMessages) => [...prevMessages, data ? data[0] : null]);
-    setInput('');
   };
 
   useEffect(() => {
     fetchMessages();
   }, []);
 
+  const sendMessage = async () => {
+    if (!newMessage) return;
+    const { error } = await supabase
+      .from('messages')
+      .insert({ content: newMessage, parent_id: selectedMessage?.id || null });
+    if (error) console.error(error);
+    setNewMessage('');
+    fetchMessages();
+  };
+
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: 'auto' }}>
-      <h1>Chat Application</h1>
-      <div style={{ border: '1px solid #ccc', padding: '10px', marginBottom: '10px', height: '400px', overflowY: 'scroll' }}>
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ margin: '10px 0', border: '1px solid #f0f0f0', padding: '10px', borderRadius: '5px' }}>
-            <p>{msg.content}</p>
-            <BranchMessage messageId={msg.id} />
+    <div>
+      <div className="mb-4">
+        {messages.map((message) => (
+          <div key={message.id} className="mb-2">
+            <div>{message.content}</div>
+            <button
+              onClick={() => setSelectedMessage(message)}
+              className="text-blue-500"
+            >
+              Branch
+            </button>
           </div>
         ))}
       </div>
-      <input
-        type="text"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Type a message"
-        style={{ width: 'calc(100% - 70px)', padding: '10px', marginRight: '10px' }}
-      />
-      <button onClick={handleSendMessage} disabled={!input.trim()} style={{ padding: '10px' }}>
-        Send
-      </button>
+      {selectedMessage && (
+        <BranchMessage
+          message={selectedMessage}
+          setSelectedMessage={setSelectedMessage}
+          messages={messages}
+        />
+      )}
+      <div className="flex">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          className="border p-2 flex-grow"
+          placeholder="Type a message..."
+        />
+        <button onClick={sendMessage} className="bg-blue-500 text-white p-2">
+          Send
+        </button>
+      </div>
     </div>
   );
 };

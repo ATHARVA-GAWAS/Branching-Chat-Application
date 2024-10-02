@@ -1,12 +1,11 @@
+// Filename: app/page.tsx
 import Chat from './components/Chat';
 
-const Home = () => {
+export default function HomePage() {
   return (
-    <div>
-      <h1>Chat Application</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-4">ChatGPT Clone</h1>
       <Chat />
     </div>
   );
-};
-
-export default Home;
+}
